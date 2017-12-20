@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+					http://www.springframework.org/schema/beans/spring-beans-4.0.xsd	
+					http://www.springframework.org/schema/context  
+                    http://www.springframework.org/schema/context/spring-context-4.0.xsd
+                    http://www.springframework.org/schema/tx
+                    http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+                    http://www.springframework.org/schema/aop
+                    http://www.springframework.org/schema/aop/spring-aop-4.0.xsd">
+	
+	<context:component-scan base-package="com.light.dao.*"/>
+	
+	<!-- redis 连接池 -->
+      <bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
+      	<property name="maxTotal" value="20"></property>
+      	<property name="maxIdle" value="1"></property>
+      </bean>
+      
+      <!-- redis 连接工厂 -->
+      <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory"
+      destroy-method="destroy">
+      	<property name="hostName" value="192.168.2.11"/>
+      	<property name="port" value="6379"/>
+      	<property name="timeout" value="5000"/>
+      	<property name="password" value=""/>
+      	<property name="usePool" value="true"/>
+      	<property name="poolConfig" ref="jedisPoolConfig"/>
+      </bean>
+      
+      <!-- redis 模板 -->
+      <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate" >    
+        <property name="connectionFactory" ref="jedisConnectionFactory" />    
+    </bean >    
+      
+      <!-- Shiro 的Web过滤器 -->
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<property name="securityManager" ref="securityManager" />
+		<property name="loginUrl" value="/index.jsp" />
+		<!-- 过虑器链定义，从上向下顺序执行，一般将/**放在最下边 -->
+		<property name="filterChainDefinitions">
+			<value>
+				/resources/**=anon
+				/login=anon
+			</value>
+		</property>
+	</bean>
+
+	<!-- 安全管理器 -->
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="sessionManager" ref="sessionManager" />
+	</bean>
+	
+	<!-- 会话管理器 -->
+    <bean id="sessionManager" class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager">
+        <property name="sessionDAO" ref="sessionDAO"></property>
+    </bean>
+
+	<!-- 自定义 sessionDAO -->
+	<bean id="sessionDAO" class="com.light.dao.CustomSessionDAO"></bean>
+</beans>
